@@ -151,32 +151,6 @@
 
 #REPORTES DE BUSG POR:
 
-[@Alexmod80](https://t.me/Alexmod80)
+[@GATESCCN](https://t.me/GATESCCN)
 
-[@ander2314](https://t.me/ander2314)
-
-[@arqimidez](https://t.me/arqimidez)
-
-[@Walterlzz](https://t.me/Walterlzz)
-
-[@Nelsongabriel32](https://t.me/Nelsongabriel32)
-
-[@titoec593](https://t.me/titoec593)
-
-[@Rg4bott](https://t.me/Rg4bott)
-
-[@SonicBoom2021](https://t.me/SonicBoom2021)
-
-[@CrakenYT](https://t.me/CrakenYT)
-
-[@WillyAbel](https://t.me/WillyAbel)
-
-[@JuanCdiaz99](https://t.me/JuanCdiaz99)
-
-[@Trigger_Fulanito](https://t.me/Trigger_Fulanito)
-
-[@Near365](https://t.me/Near365)
-
-[@JManu287](https://t.me/JManu287)
-
-[@Stain89mx](https://t.me/Stain89mx)
+ 
