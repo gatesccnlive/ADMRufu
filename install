@@ -272,7 +272,7 @@ ws-cdn.sh
 WS-Proxy.js'
 
 # URL donde se encuentran los archivos
-lisArq="https://raw.githubusercontent.com/rudi9999/ADMRufu/main/old"
+lisArq="https://github.com/gatesccnlive/ADMRufu/tree/main/old"
 
 # Versión del software que se almacenará
 ver=$(curl -sSL "https://raw.githubusercontent.com/rudi9999/ADMRufu/main/vercion")
