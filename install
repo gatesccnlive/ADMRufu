@@ -1,53 +1,74 @@
-
 #!/bin/bash
-
+# NOMBRE DEL ARCHIVO ES /root/ADMRufu/install
+# Define el módulo que se va a usar, que es el script actual en el directorio de trabajo
 module="$(pwd)/module"
+# Elimina cualquier archivo o directorio llamado 'module'
 rm -rf ${module}
+# Descarga el módulo desde un repositorio de GitHub y lo guarda en la ruta definida
 wget -O ${module} "https://raw.githubusercontent.com/rudi9999/Herramientas/main/module/module" &>/dev/null
+# Si el módulo no se descarga correctamente, sale del script
 [[ ! -e ${module} ]] && exit
+# Da permisos de ejecución al módulo
 chmod +x ${module} &>/dev/null
+# Carga el módulo en el entorno actual
 source ${module}
 
+# Función para limpiar y salir
 CTRL_C(){
   rm -rf ${module}; exit
 }
 
+# Verifica si el script se está ejecutando como root, de lo contrario muestra un mensaje de error y sale
 if [[ ! $(id -u) = 0 ]]; then
   clear
   msg -bar
   print_center -ama "ERROR DE EJECUCION"
   msg -bar
-  print_center -ama "DEVE EJECUTAR DESDE EL USUSRIO ROOT"
+  print_center -ama "DEVE EJECUTAR DESDE EL USUSUARIO ROOT"
   msg -bar
   CTRL_C
 fi
 
+# Captura señales de interrupción y termina el script con limpieza
 trap "CTRL_C" INT TERM EXIT
 
+# Crea un directorio para ADMRufu y subdirectorios necesarios
 ADMRufu="/etc/ADMRufu" && [[ ! -d ${ADMRufu} ]] && mkdir ${ADMRufu}
 ADM_inst="${ADMRufu}/install" && [[ ! -d ${ADM_inst} ]] && mkdir ${ADM_inst}
 tmp="${ADMRufu}/tmp" && [[ ! -d ${tmp} ]] && mkdir ${tmp}
 SCPinstal="$HOME/install"
 
-#rm -rf /etc/localtime &>/dev/null
-#ln -s /usr/share/zoneinfo/America/Argentina/Tucuman /etc/localtime &>/dev/null
+# Copia el script actual al directorio de instalación de ADMRufu
 cp -f $0 ${ADMRufu}/install.sh
+# Elimina el script original
 rm $(pwd)/$0 &> /dev/null
+# Si el comando "install-LIC" no existe, lo descarga
 if [[ $(which install-LIC) = "" ]]; then
   wget -O /usr/bin/install-LIC 'https://github.com/rudi9999/Rufu-LIC/raw/main/install-LIC'; chmod +x /usr/bin/install-LIC &>/dev/null
 fi
-install-LIC
-[[ $? = 1 ]] && exit
 
+# SALTAR TEMPORALMENTE EL COMANDO install-LIC
+echo "LLAVE AUN NO PROGRAMADA, DISFRUTA SIN PRECEDENTES"
+# install-LIC  # Este comando se ha comentado para saltar su ejecución temporalmente.
+
+# TODO: Activar el comando `install-LIC` en el futuro aquí
+# Descomentar la línea anterior cuando se tenga el script `install-LIC` preparado.
+
+# Si hubo un error en la instalación, sale
+# [[ $? = 1 ]] && exit  # Asegúrate de manejar errores de manera correcta aquí más adelante.
+
+# Función para detener la instalación
 stop_install(){
   title "INSTALACION CANCELADA"
   exit
- }
+}
 
+# Función para reiniciar el VPS después de un tiempo definido
 time_reboot(){
   print_center -ama "REINICIANDO VPS EN $1 SEGUNDOS"
   REBOOT_TIMEOUT="$1"
   
+  # Cuenta regresiva para el reinicio
   while [ $REBOOT_TIMEOUT -gt 0 ]; do
      print_center -ne "-$REBOOT_TIMEOUT-\r"
      sleep 1
@@ -56,31 +77,39 @@ time_reboot(){
   reboot
 }
 
+# Función para configurar los repositorios según la versión del sistema operativo
 repo_install(){
   link="https://raw.githubusercontent.com/rudi9999/ADMRufu/main/Repositorios/$VERSION_ID.list"
   case $VERSION_ID in
-    8*|9*|10*|11*|16.04*|18.04*|20.04*|20.10*|21.04*|21.10*|22.04*) [[ ! -e /etc/apt/sources.list.back ]] && cp /etc/apt/sources.list /etc/apt/sources.list.back
-                                                                    wget -O /etc/apt/sources.list ${link} &>/dev/null;;
+    8*|9*|10*|11*|16.04*|18.04*|20.04*|20.10*|21.04*|21.10*|22.04*)
+      [[ ! -e /etc/apt/sources.list.back ]] && cp /etc/apt/sources.list /etc/apt/sources.list.back
+      wget -O /etc/apt/sources.list ${link} &>/dev/null;;
   esac
 }
 
+# Función para instalar las dependencias necesarias
 dependencias(){
+  # Lista de software a instalar
   soft="sudo bsdmainutils zip unzip ufw curl python python3 python3-pip openssl screen cron iptables lsof nano at mlocate gawk grep bc jq curl npm nodejs socat netcat netcat-traditional net-tools cowsay figlet lolcat sqlite3 libsqlite3-dev locales"
 
+  # Itera sobre cada software en la lista
   for install in $soft; do
     leng="${#install}"
     puntos=$(( 21 - $leng))
     pts="."
+    # Genera un indicador visual con puntos
     for (( a = 0; a < $puntos; a++ )); do
       pts+="."
     done
     msg -nazu "      instalando $install $(msg -ama "$pts")"
+    # Intenta instalar el software, si falla, intenta corregir la instalación
     if apt install $install -y &>/dev/null ; then
       msg -verd "INSTALL"
     else
       msg -verm2 "FAIL"
       sleep 2
       del 1
+      # Si es Python, intenta instalar Python 2 como solución
       if [[ $install = "python" ]]; then
         pts=$(echo ${pts:1})
         msg -nazu "      instalando python2 $(msg -ama "$pts")"
@@ -92,6 +121,7 @@ dependencias(){
         fi
         continue
       fi
+      # Intenta aplicar un arreglo a la instalación
       print_center -ama "aplicando fix a $install"
       dpkg --configure -a &>/dev/null
       sleep 2
@@ -106,18 +136,22 @@ dependencias(){
   done
 }
 
+# Función para verificar y mover archivos a sus ubicaciones correctas
 verificar_arq(){
   unset ARQ
+  # Define la ruta del archivo según el tipo que se le pase como argumento
   case $1 in
     menu|menu_inst.sh|tool_extras.sh|chekup.sh|bashrc)ARQ="${ADMRufu}";;
     ADMRufu)ARQ="/usr/bin";;
     message.txt)ARQ="${tmp}";;
     *)ARQ="${ADM_inst}";;
   esac
+  # Mueve el archivo a la ruta correspondiente y le da permisos de ejecución
   mv -f ${SCPinstal}/$1 ${ARQ}/$1
   chmod +x ${ARQ}/$1
 }
 
+# Función para manejar errores
 error_fun(){
   msg -bar3
   print_center -verm "ERROR de enlace VPS<-->GENERADOR"
@@ -126,21 +160,26 @@ error_fun(){
   exit
 }
 
+# Función post-reinicio
 post_reboot(){
+  # Añade un comando al .bashrc para continuar la instalación después del reinicio
   echo 'clear; sleep 2; /etc/ADMRufu/install.sh --continue' >> /root/.bashrc
   title "INSTALADOR ADMRufu"
   print_center -ama "La instalacion continuara\ndespues del reinicio!!!"
   msg -bar
 }
 
+# Función para iniciar el proceso de instalación
 install_start(){
   title "INSTALADOR ADMRufu"
-  print_center -ama "A continuacion se actualizaran los paquetes\ndel systema. Esto podria tomar tiempo,\ny requerir algunas preguntas\npropias de las actualizaciones."
+  print_center -ama "A continuacion se actualizaran los paquetes\ndel systema. Esto podria tomar tiempo,\ny requerir algunas preguntas
+propias de las actualizaciones."
   msg -bar3
   read -rp "$(msg -verm2 " Desea continuar? [S/N]:") " -e -i S opcion
   [[ "$opcion" != @(s|S) ]] && stop_install
   title "INSTALADOR ADMRufu"
-  print_center -ama 'Esto modificara la hora y fecha automatica\nsegun la Zona horaria establecida.'
+  print_center -ama 'Esto modificara la hora y fecha automatica
+segun la Zona horaria establecida.'
   msg -bar
   read -rp "$(msg -ama " Modificar la zona horaria? [S/N]:") " -e -i N opcion
   [[ "$opcion" != @(n|N) ]] && source <(curl -sSL "https://raw.githubusercontent.com/rudi9999/ADMRufu/main/online/timeZone.sh")
@@ -152,6 +191,7 @@ install_start(){
   [[ "$VERSION_ID" = '9' ]] && source <(curl -sL https://deb.nodesource.com/setup_10.x)
 }
 
+# Función para continuar después del reinicio
 install_continue(){
   title "INSTALADOR ADMRufu"
   print_center -ama "$PRETTY_NAME"
@@ -164,12 +204,16 @@ install_continue(){
   [[ "$VERSION_ID" = '9' ]] && apt remove unscd -y &>/dev/null
   sleep 2
   tput cuu1 && tput dl1
-  print_center -ama "si algunas de las dependencias falla!!!\nal terminar, puede intentar instalar\nla misma manualmente usando el siguiente comando\napt install nom_del_paquete"
+  print_center -ama "si algunas de las dependencias falla!!!\nal terminar, puede intentar instalar
+la misma manualmente usando el siguiente comando
+apt install nom_del_paquete"
   enter
 }
 
+# Carga información del sistema
 source /etc/os-release; export PRETTY_NAME
 
+# Interfaz principal para manejar las diferentes opciones de instalación
 while :
 do
   case $1 in
@@ -186,12 +230,14 @@ do
   esac
 done
 
+# Mensaje de inicio de instalación
 title "INSTALADOR ADMRufu"
 fun_ip
 
 msg -ne " Verificando Datos: "
 cd $HOME
 
+# Lista de archivos a instalar
 arch='ADMRufu
 bashrc
 budp.sh
@@ -225,19 +271,26 @@ wireguard.sh
 ws-cdn.sh
 WS-Proxy.js'
 
+# URL donde se encuentran los archivos
 lisArq="https://raw.githubusercontent.com/rudi9999/ADMRufu/main/old"
 
+# Versión del software que se almacenará
 ver=$(curl -sSL "https://raw.githubusercontent.com/rudi9999/ADMRufu/main/vercion")
 echo "$ver" > ${ADMRufu}/vercion
-echo -e "Idioma=es_ES.utf8\nRutaLocales=locale" > ${ADMRufu}/lang.ini
+# Configuración de lenguaje
+echo -e "Idioma=es_ES.utf8
+RutaLocales=locale" > ${ADMRufu}/lang.ini
 
+# Mensaje de instalación
 title -ama '[Proyect by @Rufu99]'
 print_center -ama 'INSTALANDO SCRIPT ADMRufu'
 sleep 2; del 1
 
+# Crea un directorio de instalación si no existe
 [[ ! -d ${SCPinstal} ]] && mkdir ${SCPinstal}
 print_center -ama 'Descarga de archivos.....'
 
+# Itera sobre la lista de archivos para descargarlos
 for arqx in $(echo $arch); do
   wget --no-check-certificate -O ${SCPinstal}/${arqx} ${lisArq}/${arqx} > /dev/null 2>&1 && {
     verificar_arq "${arqx}"
@@ -249,11 +302,14 @@ for arqx in $(echo $arch); do
   }
 done
 
+# URL base para utilidades
 url='https://github.com/rudi9999/ADMRufu/raw/main/Utils'
 
+# Crea los directorios de bin y sbin si no existen
 autoStart="${ADMRufu}/bin" && [[ ! -d $autoStart ]] && mkdir $autoStart
 varEntorno="${ADMRufu}/sbin" && [[ ! -d $varEntorno ]] && mkdir $varEntorno
 
+# Crea un script para listar comandos
 cat <<EOF>$varEntorno/ls-cmd
 #!/bin/bash
 echo 'menu'
@@ -261,9 +317,11 @@ ls /etc/ADMRufu/sbin|sed 's/ /\n/'
 EOF
 chmod +x $varEntorno/ls-cmd
 
+# Descarga varios scripts y utilidades
 wget --no-cache -O $autoStart/autoStart "$url/autoStart/autoStart" &>/dev/null; chmod +x $autoStart/autoStart
 wget --no-cache -O $autoStart/auto-update "$url/auto-update/auto-update" &>/dev/null; chmod +x $autoStart/auto-update
 
+# Más descargas de utilidades a sus respectivos directorios
 wget --no-cache -O ${ADMRufu}/install/udp-custom "$url/udp-custom/udp-custom" &>/dev/null; chmod +x ${ADMRufu}/install/udp-custom
 wget --no-cache -O ${ADMRufu}/install/psiphon-manager "$url/psiphon/psiphon-manager" &>/dev/null; chmod +x ${ADMRufu}/install/psiphon-manager
 wget --no-cache -O ${varEntorno}/dropBear "$url/dropBear/dropBear" &>/dev/null; chmod +x ${varEntorno}/dropBear
@@ -296,18 +354,22 @@ wget --no-cache -O ${varEntorno}/userTOKEN    "$url/user-managers/userTOKEN/user
 wget --no-cache -O ${autoStart}/limit    "$url/user-managers/limitador/limit" &>/dev/null;   chmod +x ${autoStart}/limit
 ${autoStart}/limit
 
+# Descarga el script de desinstalación
 wget --no-cache -O /etc/ADMRufu/uninstall "https://github.com/rudi9999/ADMRufu/raw/main/uninstall" &>/dev/null; chmod +x /etc/ADMRufu/uninstall
 
+# Si existe el script de inicio automático, se ejecuta
 if [[ -e $autoStart/autoStart ]]; then
   $autoStart/autoStart -e /etc/ADMRufu/autoStart
 fi
 
+# Elimina el enlace y el perfil de bash si existen
 #profileDir="/etc/profile.d" && [[ ! -d ${profileDir} ]] && mkdir ${profileDir}
 #echo '#!/bin/bash
 #export PATH="$PATH:/etc/ADMRufu/sbin"' > /etc/profile.d/rufu.sh
 #chmod +x /etc/profile.d/rufu.sh
 rm -rf /etc/profile.d/rufu.sh
 
+# Crea enlaces simbólicos para los comandos en el directorio /usr/bin
 sbinList=$(ls ${varEntorno})
 for i in `echo $sbinList`; do
   ln -s ${varEntorno}/$i /usr/bin/$i
@@ -315,6 +377,7 @@ done
 
 del 1
 
+# Mensaje de instalación completa
 print_center -verd 'Instalacion completa'
 sleep 2s
 rm $HOME/lista-arq
@@ -324,15 +387,19 @@ rm -rf /usr/bin/adm
 ln -s /usr/bin/ADMRufu /usr/bin/menu
 ln -s /usr/bin/ADMRufu /usr/bin/adm
 ln -s /etc/ADMRufu/reseller /etc/ADMRufu/tmp/message.txt
+# Limpia las entradas no deseadas del bashrc
 sed -i '/Rufu/d' /etc/bash.bashrc
 sed -i '/Rufu/d' /root/.bashrc
 echo '[[ -e /etc/ADMRufu/bashrc ]] && source /etc/ADMRufu/bashrc' >> /etc/bash.bashrc
+# Configura el lenguaje del sistema
 locale-gen en_US.UTF-8
 update-locale LANG=en_US.UTF-8 LANGUAGE=en LC_ALL=en_US.UTF-8
-echo -e "LANG=en_US.UTF-8\nLANGUAGE=en\nLC_ALL=en_US.UTF-8" > /etc/default/locale
+echo -e "LANG=en_US.UTF-8
+LANGUAGE=en
+LC_ALL=en_US.UTF-8" > /etc/default/locale
 [[ ! $(cat /etc/shells|grep "/bin/false") ]] && echo -e "/bin/false" >> /etc/shells
 clear
 title "-- ADMRufu INSTALADO --"
 
-mv -f ${module} /etc/ADMRufu/module
+# Reinicia el sistema después de un tiempo
 time_reboot "10"
